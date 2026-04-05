@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoiceMath AI - Calculadora de Voz</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Voice<span>Math</span></h1>
+            <p>Toque no microfone e fale o cálculo</p>
+        </header>
+
+        <div class="calculator-card">
+            <div id="status" class="status-text">Pronto para ouvir</div>
+            
+            <div id="visualizer" class="visualizer">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+
+            <button id="mic-btn" class="mic-button">
+                <i class="fas fa-microphone"></i>
+            </button>
+
+            <div class="transcript-box">
+                <p id="transcript">"Quanto é..."</p>
+            </div>
+
+            <div class="result-display">
+                <small>RESULTADO</small>
+                <div id="result">---</div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
