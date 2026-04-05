@@ -2,43 +2,116 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VoiceMath AI - Calculadora de Voz</title>
-    <link rel="stylesheet" href="style.css">
+    <title>VoiceMath AI - Modo Sempre Ativo</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --p: #8b5cf6; --bg: #030712; }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; text-align: center; }
+        
+        /* Overlay de Ativação */
+        #overlay { position: fixed; inset: 0; background: var(--bg); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; }
+        .btn-start { padding: 25px 50px; background: var(--p); border-radius: 50px; font-weight: bold; font-size: 1.5rem; border: none; color: white; box-shadow: 0 0 30px rgba(139, 92, 246, 0.5); animation: pulse-btn 2s infinite; }
+        
+        /* Interface Principal */
+        .aura { position: absolute; width: 200px; height: 200px; background: var(--p); filter: blur(80px); border-radius: 50%; opacity: 0.3; animation: pulse-aura 3s infinite; }
+        .mic-icon { font-size: 5rem; color: var(--p); text-shadow: 0 0 20px var(--p); position: relative; z-index: 10; }
+        
+        #result { font-size: 7rem; font-weight: 900; margin: 10px 0; background: linear-gradient(to bottom, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        #transcript { font-size: 1.2rem; opacity: 0.5; font-style: italic; min-height: 1.5em; }
+        #status-bar { position: absolute; top: 20px; font-size: 0.8rem; letter-spacing: 2px; color: #4ade80; }
+
+        @keyframes pulse-aura { 0%, 100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.5); opacity: 0.1; } }
+        @keyframes pulse-btn { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Voice<span>Math</span></h1>
-            <p>Toque no microfone e fale o cálculo</p>
-        </header>
 
-        <div class="calculator-card">
-            <div id="status" class="status-text">Pronto para ouvir</div>
-            
-            <div id="visualizer" class="visualizer">
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-            </div>
-
-            <button id="mic-btn" class="mic-button">
-                <i class="fas fa-microphone"></i>
-            </button>
-
-            <div class="transcript-box">
-                <p id="transcript">"Quanto é..."</p>
-            </div>
-
-            <div class="result-display">
-                <small>RESULTADO</small>
-                <div id="result">---</div>
-            </div>
-        </div>
+    <div id="overlay">
+        <button class="btn-start">ATIVAR ESCUTA CONTÍNUA</button>
+        <p style="color: #666; margin-top: 20px;">Clique uma vez para dar permissão ao microfone</p>
     </div>
-    <script src="script.js"></script>
+
+    <div id="status-bar">● SISTEMA DE ESCUTA ATIVO</div>
+
+    <div class="main-container">
+        <div style="display: flex; justify-content: center; align-items: center;">
+            <div class="aura"></div>
+            <i class="fas fa-microphone mic-icon"></i>
+        </div>
+        
+        <div id="result">0</div>
+        <div id="transcript">Diga um cálculo...</div>
+    </div>
+
+    <script>
+        const resultDiv = document.getElementById('result');
+        const transcriptDiv = document.getElementById('transcript');
+        const overlay = document.getElementById('overlay');
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            alert("Navegador não suportado. Use Chrome ou Edge.");
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'pt-BR';
+        recognition.continuous = false; // "False" funciona melhor para cálculos rápidos no loop infinito
+        recognition.interimResults = false;
+
+        // --- FUNÇÃO DE CÁLCULO ---
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript.toLowerCase();
+            transcriptDiv.innerText = `"${transcript}"`;
+            
+            let expressao = transcript
+                .replace(/vezes|x/g, '*')
+                .replace(/dividido por|dividido/g, '/')
+                .replace(/mais/g, '+')
+                .replace(/menos/g, '-')
+                .replace(/,/g, '.')
+                .replace(/[^-+*/0-9. ]/g, ''); 
+
+            try {
+                if (expressao.trim() !== "") {
+                    let resultado = eval(expressao);
+                    if (!isNaN(resultado)) {
+                        resultDiv.innerText = resultado;
+                        falar(resultado);
+                    }
+                }
+            } catch (e) { console.log("Fala não matemática ignorada."); }
+        };
+
+        // --- O SEGREDO DA CONTINUIDADE ---
+        recognition.onend = () => {
+            // Se o reconhecimento parar sozinho, ele força o reinício imediato
+            console.log("Reiniciando microfone automaticamente...");
+            recognition.start();
+        };
+
+        // Previne erros de "already started"
+        recognition.onerror = (event) => {
+            console.error("Erro detectado:", event.error);
+            if (event.error === 'network') {
+                alert("Verifique sua conexão com a internet.");
+            }
+        };
+
+        function falar(texto) {
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance(texto);
+            msg.lang = 'pt-BR';
+            msg.rate = 1.1;
+            window.speechSynthesis.speak(msg);
+        }
+
+        // Ativação inicial
+        overlay.onclick = () => {
+            overlay.style.display = 'none';
+            recognition.start();
+            falar("Escuta contínua ligada");
+        };
+    </script>
 </body>
 </html>
